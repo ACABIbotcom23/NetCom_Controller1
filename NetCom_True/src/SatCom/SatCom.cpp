@@ -1,7 +1,7 @@
 #include <SatCom/SatCom.hpp>
 #include "Json/Json.hpp"
 #include "Semaphore.hpp"
-#include "PinDefines.hpp"
+#include "PinDefines/PinDefines.hpp"
 
 const int SEND_WINDOW_START_INTERVAL_MS = 30000;        // 30 seconds for demo, will be 5 minutes
 const int SEND_WINDOW_LENGTH_MS = 10000;                // 10 seconds for demo, will be 10 seconds

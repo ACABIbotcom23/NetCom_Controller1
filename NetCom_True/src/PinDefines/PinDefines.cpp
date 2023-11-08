@@ -1,4 +1,4 @@
-#include "PinDefines.hpp"
+#include "PinDefines/PinDefines.hpp"
 
 TwoWire C1_C2 = TwoWire(0);
 TwoWire Bat_C1 = TwoWire(1);

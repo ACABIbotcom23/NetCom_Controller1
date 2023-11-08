@@ -1,5 +1,5 @@
 #include "MainHeader.hpp"
-#include "PinDefines.hpp"
+#include "PinDefines/PinDefines.hpp"
 #include "Semaphore.hpp"
 #include "Json/Json.hpp"
 #include "SatCom/SatCom.hpp"
