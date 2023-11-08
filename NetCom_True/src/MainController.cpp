@@ -1,6 +1,6 @@
 #include "MainHeader.hpp"
 #include "PinDefines/PinDefines.hpp"
-#include "Semaphore.hpp"
+//#include "Semaphore.hpp"
 #include "Json/Json.hpp"
 #include "SatCom/SatCom.hpp"
 
@@ -11,24 +11,33 @@ void setup(){
 
 
     init_pins();
-    /*
-    for the pins in have done something very very wrong with this. to the point where if this is enabled
-    the serial monitor shits itself. might try to use arduino's wire.h instead of driver/i2c.h and driver/uart.h
-    This is not needed yet.
-    */
 
-    if(!init_xsemaphore()){
-        Serial.println("Failed to init semapore");
-    }
 
-    init_json_tasks();
+    init_json();
     initialize_satcom_tasks();
     //initialize_wifi_tasks();
 
-    vTaskStartScheduler();
+    
 
 }
 
 void loop(){
+
+    /*
+    
+    if no current misson wait in place
+        collect sensor data 
+        collect battery data
+        collect gnss data
+
+
+
+
+    check if there are messages to receive
+        if yes receive message and parse
+        if no move on
+        this shopuld only checkl every 
+    
+    */
 
 }

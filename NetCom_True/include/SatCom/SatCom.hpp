@@ -12,12 +12,10 @@
 
 void initialize_satcom_tasks();
 
-void sendJsonOverSatelliteTask(void *parameter);
-
 bool sendJsonOverSatellite();
 
 void receive_json_satcom();
 
-void receive_json_satcom_task(void *parameter);
+
 
 #endif

@@ -13,14 +13,14 @@ IridiumSBD isbd(Serial1);
 void initialize_satcom_tasks(){
 
     IridiumSBD isbd(Serial1);
-    xTaskCreate(sendJsonOverSatelliteTask, "sendJsonOverSatelliteTask", 4096, NULL, configMAX_PRIORITIES - 1, NULL);
+    //xTaskCreate(sendJsonOverSatelliteTask, "sendJsonOverSatelliteTask", 4096, NULL, configMAX_PRIORITIES - 1, NULL);
 
 }
 // Im portant notes if no iridium module using the uart port then ESP32 will stroke and reboot
 // we still get into function and print the binary string (yay)
 bool sendJsonOverSatellite() {
   
-    Serial.println("tay");
+    Serial.println("Start of sendJsonOverSatellite");
     uint8_t binaryString[300];
     size_t data_s;
     if (get_json_as_binary_string(binaryString, 300, data_s)){
@@ -54,17 +54,18 @@ bool sendJsonOverSatellite() {
 }
 
 
-void sendJsonOverSatelliteTask(void *parameter) {
-    Serial.println("Start of sendJsnOverSatelliteTask function");
-    for (;;) {
-        vTaskDelay(pdMS_TO_TICKS(SEND_WINDOW_START_INTERVAL_MS));
-        if (sendJsonOverSatellite()){
-            Serial.println("Message sent over satellite");
-        }
-        else{
-            Serial.println("Message send failed");
-        }
+
+// void sendJsonOverSatelliteTask(void *parameter) {
+//     Serial.println("Start of sendJsnOverSatelliteTask function");
+//     for (;;) {
+//         vTaskDelay(pdMS_TO_TICKS(SEND_WINDOW_START_INTERVAL_MS));
+//         if (sendJsonOverSatellite()){
+//             Serial.println("Message sent over satellite");
+//         }
+//         else{
+//             Serial.println("Message send failed");
+//         }
         
-    }
-    Serial.println("End of sendJsnOverSatelliteTask function");
-}
+//     }
+//     Serial.println("End of sendJsnOverSatelliteTask function");
+// }

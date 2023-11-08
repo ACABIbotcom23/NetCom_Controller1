@@ -22,7 +22,7 @@ StaticJsonDocument<300> Sensor_Doc;
 const char *SENSOR_DATA_JSONFILE = "/sensor_doc.json";
 */
 
-void init_json_tasks(){
+void init_json(){
 
     TEST_DATA_1.Battery_Level = 1;
     TEST_DATA_1.Status_Code[0] = 99;
@@ -39,7 +39,7 @@ void init_json_tasks(){
     //xTaskCreate(checkOrCreateJsonFileTask, "CheckCreateJson", 4096, NULL, configMAX_PRIORITIES - 1, NULL);
     checkOrCreateJsonFile();
 
-    xTaskCreate(updateJsonDataTask, "UpdateData", 4096, NULL, 1, NULL);
+    //xTaskCreate(updateJsonDataTask, "UpdateData", 4096, NULL, 1, NULL);
 
 }
 

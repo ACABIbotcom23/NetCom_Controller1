@@ -13,7 +13,7 @@ extern const char *jsonFileName;            // holds all data not sensor data
 extern const char *SENSOR_DATA_JSONFILE;    // holds all sensor data only
 
 
-void init_json_tasks();
+void init_json();
 
 void checkOrCreateJsonFile();
 void updateJsonData(uint8_t batteryLevel, uint8_t statusCode[2], float gpsData[3]);
