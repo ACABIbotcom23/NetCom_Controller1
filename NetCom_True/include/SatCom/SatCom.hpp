@@ -12,9 +12,12 @@
 
 void initialize_satcom_tasks();
 
-bool sendJsonOverSatellite();
+bool sendJsonOverSatellite(String file);
 
 void receive_json_satcom();
+
+bool check_incoming_message();
+
 
 
 

@@ -21,13 +21,12 @@ Number/Name |   Function    |
 - GPIO 22   |   SCL         |
 */
 
-#include "driver/i2c.h"
-#include "driver/uart.h"
 #include "Wire.h"
 #include "HardwareSerial.h"
 
 #define UART_TX0_Sat_C1     25
 #define UART_RX0_Sat_C1     26
+#define SLEEP_PIN_Sat       27
 
 #define UART_TX1_GNSS_C1    17
 #define UART_RX1_GNSS_C1    16
@@ -47,6 +46,5 @@ void set_uart_Sat_C1();
 void set_uart_GNSS_C1();
 
 void init_pins();
-
 
 #endif

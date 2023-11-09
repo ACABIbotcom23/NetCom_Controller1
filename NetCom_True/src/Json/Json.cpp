@@ -1,6 +1,7 @@
 #include "Json/Json.hpp"
 #include "Semaphore.hpp"
 #include "TestData.hpp"
+#include "PinDefines/PinDefines.hpp"
 
 const int SEND_WINDOW_START_INTERVAL_MS = 30000;        // 30 seconds for demo, will be 5 minutes
 const int SEND_WINDOW_LENGTH_MS = 10000;                // 10 seconds for demo, will be 10 seconds
@@ -9,8 +10,15 @@ const int UPDATE_TASK_DELAY_MS = SEND_WINDOW_START_INTERVAL_MS + UPDATE_OFFSET_M
 
 StaticJsonDocument<SIZE_OF_JSON_BYTES> Status_Doc;
 
+String send_file = "";
+
 const char *jsonFileName = "/send_file.json"; 
 
+StaticJsonDocument<SIZE_OF_JSON_BYTES> Receive_Doc;
+
+String receive_file = "";
+
+const char *RECEIVE_DATA_JSONFILE = "/receive_file.json";
 /*
 need to figure out a function structure for the 16 bit and to see how fast we can
 transfer 50 16 bit numbers into a file 30 times. 
@@ -22,64 +30,31 @@ StaticJsonDocument<300> Sensor_Doc;
 const char *SENSOR_DATA_JSONFILE = "/sensor_doc.json";
 */
 
-void init_json(){
+send_data_1 TEST_DATA_1;
 
-    TEST_DATA_1.Battery_Level = 1;
+void init_test_data(){
+    TEST_DATA_1.Battery_Level = 100;
     TEST_DATA_1.Status_Code[0] = 99;
     TEST_DATA_1.Status_Code[1] = 98;
     TEST_DATA_1.GPS_Data[0] = 33.8;
     TEST_DATA_1.GPS_Data[1] = 35.7;
     TEST_DATA_1.GPS_Data[2] = 9.21;
+}
 
+void init_json(){
 
-    if (!LittleFS.begin(true)) {
-        Serial.println("An error has occurred while mounting SPIFFS");
-        return;
-    }
-    //xTaskCreate(checkOrCreateJsonFileTask, "CheckCreateJson", 4096, NULL, configMAX_PRIORITIES - 1, NULL);
-    checkOrCreateJsonFile();
+    init_test_data();
 
-    //xTaskCreate(updateJsonDataTask, "UpdateData", 4096, NULL, 1, NULL);
+    create_Status_Doc();
+
+    create_Receive_Doc();
+
+    create_Sensor_Doc();
 
 }
 
-void updateJsonDataTask(void *parameter) {
-    // swap out with update function
-    for (;;) {
-        vTaskDelay(pdMS_TO_TICKS(UPDATE_TASK_DELAY_MS));
-        // Here you would get your actual new data
-        uint8_t newBatteryLevel = 0;
-        uint8_t newStatusCode[2] = {0};
-        float newGpsData[3] = {0};
-
-        newBatteryLevel = TEST_DATA_1.Battery_Level;    
-        
-        newStatusCode[0] = TEST_DATA_1.Status_Code[0];   
-        newStatusCode[1] = TEST_DATA_1.Status_Code[1];           
-
-        newGpsData[0] = TEST_DATA_1.GPS_Data[0];
-        newGpsData[1] = TEST_DATA_1.GPS_Data[1];
-        newGpsData[2] = TEST_DATA_1.GPS_Data[2];                                                      
-    
-        updateJsonData(newBatteryLevel, newStatusCode, newGpsData);
-    }
-    Serial.println("End of updateJsonTask function");
-}
-
-void checkOrCreateJsonFile() {
-    Serial.println("Checking or creating JSON file...");
-
-    if (!LittleFS.begin()) {
-        Serial.println("An error has occurred while mounting LittleFS");
-        return;
-    }
-
-    if(LittleFS.exists(jsonFileName)){
-        if (delete_file(jsonFileName)){
-            Serial.println("yay");
-        }
-    }
-
+void create_Status_Doc(){
+    Status_Doc["DOC_ID"] = "Status Doc";
     Status_Doc["Battery_Level"] = 0;
     Status_Doc["Status_Code"][0] = 0;
     Status_Doc["Status_Code"][1] = 0;
@@ -87,149 +62,76 @@ void checkOrCreateJsonFile() {
     Status_Doc["GPS_Data"][1] = 0.0;
     Status_Doc["GPS_Data"][2] = 0.0;
 
-    File file = LittleFS.open(jsonFileName, "w");
-    if (!file) {
-        Serial.println("There was an error opening the file for writing");
-        return;
-    }
-
-    if (serializeJson(Status_Doc, file) == 0) {
-        Serial.println("Failed to write to file");
-    }
-    else{
-        Serial.println("wrote to");
-    }
-    file.close();
-    
-    Serial.println("End of checkOrCreateJsonFile function");
+    serializeJson(Status_Doc, send_file);
 }
 
-void updateJsonData(uint8_t batteryLevel, uint8_t statusCode[2], float gpsData[3]) {
-    if (xSemaphoreTake(xSemaphore, portMAX_DELAY) == pdTRUE) {
-        File file = LittleFS.open(jsonFileName, "r+");
-        if (!file) {
-            Serial.println("Failed to open file for updating");
-            xSemaphoreGive(xSemaphore);
-            return;
-        }
-        
-        else {
-            
-            // Update the fields with new data
+// this is template but will need to confirm what exactly is in each file received
+void create_Receive_Doc(){
+    Receive_Doc["DOC_ID"] = "Receive Doc";
+    Receive_Doc["Battery_Level"] = 0;
+    Receive_Doc["Status_Code"][0] = 0;
+    Receive_Doc["Status_Code"][1] = 0;
+    Receive_Doc["GPS_Data"][0] = 0.0;
+    Receive_Doc["GPS_Data"][1] = 0.0;
+    Receive_Doc["GPS_Data"][2] = 0.0;
+
+    serializeJson(Receive_Doc, receive_file);
+}
+
+void create_Sensor_Doc(){
+
+
+}
+
+void update_json(uint8_t file_number){
+
+    switch (file_number){
+
+        case 0:
             Status_Doc.clear();
-            char gps_1[10];
-            char gps_2[10];
-            char gps_3[10];
-            ftoa(gpsData[0], gps_1, 2);
-            ftoa(gpsData[1], gps_2, 2);
-            ftoa(gpsData[2], gps_3, 2);
+            Status_Doc["DOC_ID"] = "Status Doc";
+            Status_Doc["Battery_Level"] = TEST_DATA_1.get_battery_level();
+            Status_Doc["Status_Code"][0] = TEST_DATA_1.get_status_code(0);
+            Status_Doc["Status_Code"][1] = TEST_DATA_1.get_status_code(1);
+            Status_Doc["GPS_Data"][0] = TEST_DATA_1.get_gnss_data(0);
+            Status_Doc["GPS_Data"][1] = TEST_DATA_1.get_gnss_data(1);
+            Status_Doc["GPS_Data"][2] = TEST_DATA_1.get_gnss_data(2);
+            break;
 
-            Status_Doc["Battery_Level"] = batteryLevel;
-            Status_Doc["Status_Code"][0] = statusCode[0];
-            Status_Doc["Status_Code"][1] = statusCode[1];
-            Status_Doc["GPS_Data"][0] = gps_1;
-            Status_Doc["GPS_Data"][1] = gps_2;
-            Status_Doc["GPS_Data"][2] = gps_3;
+        // this is template but will need to confirm what exactly is in each file received
+        case 1:
+            Receive_Doc.clear();
+            Receive_Doc["DOC_ID"] = "Receive Doc";
+            Receive_Doc["Battery_Level"] = TEST_DATA_1.get_battery_level();
+            Receive_Doc["Status_Code"][0] = TEST_DATA_1.get_status_code(0);
+            Receive_Doc["Status_Code"][1] = TEST_DATA_1.get_status_code(1);
+            Receive_Doc["GPS_Data"][0] = TEST_DATA_1.get_gnss_data(0);
+            Receive_Doc["GPS_Data"][1] = TEST_DATA_1.get_gnss_data(1);
+            Receive_Doc["GPS_Data"][2] = TEST_DATA_1.get_gnss_data(2);
+            break;
 
-        }
+        case 2:
+            break;
 
-        file.seek(0); // Go to the start of the file
-        if (serializeJson(Status_Doc, file) == 0) {
-            Serial.println(F("Failed to write to file"));
-        }
-        //file.truncate(); // Remove any leftover data
-        //serializeJsonPretty(Status_Doc, Serial);
-        file.close();
-
-        xSemaphoreGive(xSemaphore);
-    } 
-    else {
-        Serial.println("Could not obtain the semaphore for updating data.");
+        default:
+            break;
     }
-    Serial.println("End of updateJsonData function");
+
 }
 
+void stringToByteArray(const String& inputString, byte* byteArray, size_t& byteArraySize) {
+  byteArraySize = inputString.length(); // Set the size of the array
+  
+  // Fill the byte array with the string's ASCII values
+  for (size_t i = 0; i < byteArraySize; i++) {
+    byteArray[i] = static_cast<byte>(inputString[i]);
+  }
 
-
-bool get_json_as_binary_string(uint8_t *binary_string, size_t buffer_size, size_t &data_size){
-
-    File file = LittleFS.open(jsonFileName, "r");
-
-    if (!file) {
-        Serial.println("Failed to open file for reading");
-        return false;
-    }
-
-    size_t file_size = file.size();
-
-    // Ensure the caller has provided a buffer large enough for the file content and a null terminator
-    if (buffer_size < file_size + 1) {
-        Serial.println("Buffer too small for file content");
-        file.close(); // Always close the file if you're exiting early
-        return false;
-    }
-
-    // Read the file into the buffer provided by the caller
-    data_size = file.read(binary_string, file_size);
-
-    // Null-terminate the buffer to treat it as a C-string
-    binary_string[data_size] = '\0';
-
-    // Close the file as we no longer need it
-    file.close();
-
-    // Check if read was successful
-    if (data_size != file_size) {
-        Serial.println("Failed to read the full file");
-        return false;
-    }
-
-    return true;
-}
-
-bool delete_file(const char* file_name){
-    if (LittleFS.remove(file_name)){
-        Serial.println("File was deleted");
-        return true;
-    }
-    else{
-        Serial.println("File was NOT deleted");
-        return false;
-    }
-}
-
-void reverse_str(char* str, int len){
-    int i = 0, j = len - 1, temp;
-    while (i < j){
-        temp = str[i];
-        str[i] = str[j];
-        str[j] = temp;
-        i++;
-        j--;
-    }
-}
-
-int int_to_str(int x, char str[], int d){
-    int i = 0;
-    while (x){
-        str[i++] = (x % 10) + '0';
-        x = x / 10;
-    }
-    while (i < d){
-        str[i++] = '0';
-    }
-    reverse_str(str, i);
-    str[i] = '\0';
-    return i;
-}
-
-void ftoa(float n, char* res, int after_dec){
-    int ipart = (int)n;
-    float fpart = n - (float)ipart;
-    int i = int_to_str(ipart, res, 0);
-    if (after_dec != 0){
-        res[i] = '.';
-        fpart = fpart * pow(10, after_dec);
-        int_to_str((int)fpart, res + i + 1, after_dec);
-    }
+  Serial.print("Byte Array in HEX: ");
+  for (size_t i = 0; i < byteArraySize; i++) {
+    if(byteArray[i] < 0x10) Serial.print("0"); // Print leading zero for single digit hex
+    Serial.print(byteArray[i], HEX);
+    Serial.print(" ");
+  }
+  Serial.println();
 }

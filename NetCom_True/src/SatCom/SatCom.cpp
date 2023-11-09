@@ -13,59 +13,71 @@ IridiumSBD isbd(Serial1);
 void initialize_satcom_tasks(){
 
     IridiumSBD isbd(Serial1);
-    //xTaskCreate(sendJsonOverSatelliteTask, "sendJsonOverSatelliteTask", 4096, NULL, configMAX_PRIORITIES - 1, NULL);
 
 }
-// Im portant notes if no iridium module using the uart port then ESP32 will stroke and reboot
-// we still get into function and print the binary string (yay)
-bool sendJsonOverSatellite() {
-  
+
+// Important notes if no iridium module using the uart port then ESP32 will stroke and reboot
+
+bool sendJsonOverSatellite(String file) {
+
+    byte* byteArray = new byte[file.length()];
+    size_t byte_arr_size = 0;
+
+    stringToByteArray(file, byteArray, byte_arr_size);
+
     Serial.println("Start of sendJsonOverSatellite");
-    uint8_t binaryString[300];
-    size_t data_s;
-    if (get_json_as_binary_string(binaryString, 300, data_s)){
-        //Serial.println(binaryToString(buffer, data_s));
-        Serial.println((char*)binaryString);
 
-        int error = isbd.begin();
-        if (error != ISBD_SUCCESS){
-            Serial.println("begin failed for isbd");
-            Serial.println(error);
-            return false;
-        }
-        error = isbd.sendSBDBinary(binaryString, data_s);
-        if (error != ISBD_SUCCESS){
-            Serial.println("SBD Send Failed");
-            Serial.println(error);
-            return false;
-        }
-        //isbd.end();
-
-        return true;
-
+    int error = isbd.begin();
+    if (error != ISBD_SUCCESS){
+        Serial.println("begin failed for isbd");
+        Serial.println(error);
+        return false;
     }
-    else{
-        Serial.println("Failed to get binary string of json");
+    error = isbd.sendSBDBinary(byteArray, byte_arr_size);
+    if (error != ISBD_SUCCESS){
+        Serial.println("SBD Send Failed");
+        Serial.println(error);
         return false;
     }
 
+    delete[] byteArray;
     return true;
 
 }
 
+bool check_incoming_message(){
 
+    if  (isbd.isAsleep()){
+        digitalWrite(SLEEP_PIN_Sat, HIGH);
+    }
+    
+    int signal_quality = 0;
+    int error = isbd.getSignalQuality(signal_quality);
 
-// void sendJsonOverSatelliteTask(void *parameter) {
-//     Serial.println("Start of sendJsnOverSatelliteTask function");
-//     for (;;) {
-//         vTaskDelay(pdMS_TO_TICKS(SEND_WINDOW_START_INTERVAL_MS));
-//         if (sendJsonOverSatellite()){
-//             Serial.println("Message sent over satellite");
-//         }
-//         else{
-//             Serial.println("Message send failed");
-//         }
-        
-//     }
-//     Serial.println("End of sendJsnOverSatelliteTask function");
-// }
+    if (error != ISBD_SUCCESS){
+        Serial.print("Signal quality check failed: error code ");
+        Serial.println(error);
+        return false;
+    }
+
+    if (signal_quality > 0) {
+    int messageWaitingCount = 0;
+    messageWaitingCount = isbd.getWaitingMessageCount();
+
+        if (messageWaitingCount > 0){
+            Serial.println("There is a message waiting to be received.");
+            return true;
+        }
+        else{
+            Serial.println("There are no messages waiting or wrror with checking.");
+            return false;
+        }
+    } 
+    else {
+        Serial.println("Signal quality is too poor to check for messages.");
+        return false;
+    }
+
+    digitalWrite(SLEEP_PIN_Sat, LOW);
+}
+
